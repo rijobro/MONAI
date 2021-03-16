@@ -254,7 +254,6 @@ jobs:
 
 
   tutorial-notebooks:  # GPU with full dependencies
-    if: github.repository == 'Project-MONAI/MONAI'
     strategy:
       matrix:
         environment:

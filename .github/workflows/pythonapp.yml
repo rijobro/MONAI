@@ -252,6 +252,39 @@ jobs:
       with:
         file: ./coverage.xml
 
+
+  tutorial-notebooks:  # GPU with full dependencies
+    if: github.repository == 'Project-MONAI/MONAI'
+    strategy:
+      matrix:
+        environment:
+          - "PT18+CUDA112"
+        include:
+          - environment: PT18+CUDA112
+            # we explicitly set pytorch to -h to avoid pip install error
+            pytorch: "-h"
+            base: "nvcr.io/nvidia/pytorch:21.02-py3"
+    container:
+      image: ${{ matrix.base }}
+      options: --gpus all
+    runs-on: [self-hosted, linux, x64, common]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: |
+        which python
+        python -m pip install --upgrade pip wheel
+        python -m pip install ${{ matrix.pytorch }}
+        python -m pip install -r requirements-dev.txt
+    - name: Checkout tutorials and install their requirements
+      run: |
+        git clone https://github.com/Project-MONAI/tutorials.git
+        cd tutorials
+        python -m pip install -r requirements.txt
+    - name: Run tutorial notebooks
+      run: |
+        sh ./runtests.sh
+
   packaging:
     runs-on: ubuntu-latest
     steps:

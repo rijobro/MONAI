@@ -115,6 +115,8 @@ class TestInverseSubset(unittest.TestCase):
         for k, n in zip(KEYS, expected_num_removed):
             self.assertEqual(len(d[k + InverseKeys.KEY_SUFFIX]), len(d2[k + InverseKeys.KEY_SUFFIX]) + n)
 
+        transforms.inverse(d2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -9,7 +9,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, Hashable, Optional, Tuple
+from copy import deepcopy
+from typing import Callable, Dict, Hashable, Optional, Sequence, Tuple
 
 import numpy as np
 import torch
@@ -119,3 +120,34 @@ class InvertibleTransform(Transform):
 
         """
         raise NotImplementedError(f"Subclass {self.__class__.__name__} must implement this method.")
+
+    @staticmethod
+    def remove_applied_transforms(
+        data: dict,
+        keys: Sequence[Hashable],
+        list_selection_fn: Optional[Callable] = None,
+        per_element_selection_fn: Optional[Callable] = None,
+    ) -> dict:
+        """Get a subset of the applied transforms (useful for only inverting some of the applied invertible transforms).
+
+        Args:
+            data: Dictionary of data to which the transforms have been applied.
+            keys: Only these keys of the dictionary will be modified. Give "image" if modifying "image_transforms".
+            list_selection_fn: selection for whole list, e.g., `lambda x: x[1:]` to remove the first element
+            per_element_selection_fn: selection for each element, e.g., `lambda x: x[InverseKeys.CLASS_NAME] != ExampleTransformd`
+                to not invert any uses of `ExampleTransformd`. If present, `list_selection_fn` will be applied first.
+
+        Raises:
+            ValueError: Neither `list_selection_fn` nor `per_element_selection_fn` are given.
+        """
+        if not (list_selection_fn or per_element_selection_fn):
+            raise ValueError("Must supply list_selection_fn and/or per_element_selection_fn")
+
+        d = deepcopy(dict(data))
+        for k in keys:
+            meta_key = str(k) + InverseKeys.KEY_SUFFIX
+            if list_selection_fn is not None:
+                d[meta_key] = list_selection_fn(d[meta_key])
+            if per_element_selection_fn is not None:
+                d[meta_key] = [t for t in d[meta_key] if per_element_selection_fn(t)]
+        return d
